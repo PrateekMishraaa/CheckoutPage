@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Shopping Cart</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f4;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            color: #333;
+        }
+
+        h1 {
+            color: #4CAF50;
+            margin-bottom: 10px;
+        }
+
+        h3 {
+            color: #555;
+            margin-bottom: 20px;
+        }
+
+        .cart-container {
+            background-color: white;
+            border-radius: 10px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+            padding: 20px;
+            text-align: center;
+            width: 400px;
+        }
+
+        .cart-items {
+            text-align: left;
+            margin-bottom: 20px;
+        }
+
+        .cart-item {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 10px;
+            align-items: center;
+        }
+
+        .cart-item span {
+            margin-right: 10px;
+        }
+
+        .increase-price {
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            padding: 5px 10px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: background-color 0.3s;
+        }
+
+        .increase-price:hover {
+            background-color: #45a049;
+        }
+
+        .total {
+            font-weight: bold;
+            font-size: 18px;
+            margin-top: 20px;
+        }
+
+        input[type="submit"] {
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            padding: 10px 20px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: background-color 0.3s;
+        }
+
+        input[type="submit"]:hover {
+            background-color: #45a049;
+        }
+
+        footer {
+            margin-top: 20px;
+            font-size: 14px;
+            color: #777;
+        }
+    </style>
+</head>
+<body>
+    <div class="cart-container">
+        <h1>Shopping Cart</h1>
+        <h3>Items in Your Cart</h3>
+        <div class="cart-items" id="cartItemsContainer"></div>
+        <p class="total" id="totalAmount"></p>
+        <form id="checkout-form" action="/checkout" method="post">
+            <input type="hidden" name="cartItems" id="cartItems" />
+            <input type="submit" value="Proceed to Checkout" />
+        </form>
+    </div>
+    <footer>
+        &copy; 2024 Your Company Name
+    </footer>
+    <script>
+        async function updateProductPrices() {
+            try {
+                const response = await fetch('/api/products');
+                const products = await response.json();
+                const cartItemsContainer = document.getElementById("cartItemsContainer");
+                const totalAmountElement = document.getElementById("totalAmount");
+                let totalAmount = 0;
+
+                cartItemsContainer.innerHTML = '';
+
+                products.forEach((product, index) => {
+                    const cartItem = document.createElement("div");
+                    cartItem.classList.add("cart-item");
+                    cartItem.innerHTML = `
+                        <span>${product.name}</span>
+                        <span id="price-${index}">$${product.price.toFixed(2)} x 1</span>
+                        <button class="increase-price" onclick="increasePrice(${index})">Increase Price</button>
+                    `;
+                    cartItemsContainer.appendChild(cartItem);
+                    totalAmount += product.price;
+                });
+
+                totalAmountElement.textContent = `Total: $${totalAmount.toFixed(2)}`;
+
+                document.getElementById("cartItems").value = JSON.stringify(products.map(product => ({
+                    name: product.name,
+                    price: product.price,
+                    quantity: 1,
+                })));
+            } catch (error) {
+                console.error("Error fetching product data:", error);
+            }
+        }
+
+        function increasePrice(index) {
+            const priceElement = document.getElementById(`price-${index}`);
+            const currentPrice = parseFloat(priceElement.textContent.split('$')[1].split(' x')[0]);
+            const newPrice = currentPrice + 1;
+
+            priceElement.textContent = `$${newPrice.toFixed(2)} x 1`;
+
+            updateTotalAmount();
+        }
+
+        function updateTotalAmount() {
+            const priceElements = document.querySelectorAll('[id^="price-"]');
+            let totalAmount = 0;
+
+            priceElements.forEach(priceElement => {
+                const price = parseFloat(priceElement.textContent.split('$')[1].split(' x')[0]);
+                totalAmount += price;
+            });
+
+            document.getElementById("totalAmount").textContent = `Total: $${totalAmount.toFixed(2)}`;
+        }
+
+        window.onload = updateProductPrices;
+    </script>
+</body>
+</html>
